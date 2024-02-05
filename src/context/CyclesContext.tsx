@@ -1,13 +1,10 @@
-import { ReactNode, createContext, useState } from 'react'
-
-interface Cycle {
-  id: string
-  task: string
-  minutesAmount: number
-  startDate: Date
-  interruptedDate?: Date
-  finishedDate?: Date
-}
+import { ReactNode, createContext, useState, useReducer } from 'react'
+import { Cycle, cyclesReducer } from '../reducers/cycles/reducer'
+import {
+  addNewCycleAction,
+  interrupedCurrentCycleActions,
+  markCurrentCycleAsFinishedActions,
+} from '../reducers/cycles/actions'
 
 interface CreateCycleData {
   task: string
@@ -32,21 +29,19 @@ interface CyclesContextProviderProps {
 }
 
 export function CycleContextProvider({ children }: CyclesContextProviderProps) {
-  const [cycles, setCycles] = useState<Cycle[]>([])
-  const [activeCycleId, setActiveCycleId] = useState<string | null>(null)
+  const [cyclesState, dispatch] = useReducer(cyclesReducer, {
+    cycles: [],
+    activeCycleId: null,
+  })
+
   const [amountSecondsPassed, setAmountSecondsPassed] = useState(0)
+
+  const { cycles, activeCycleId } = cyclesState
 
   const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId)
 
   function markCurrentCycleAsFinished() {
-    setCycles((prevState) =>
-      prevState.map((cycle) => {
-        if (cycle.id === activeCycleId) {
-          return { ...cycle, finishedDate: new Date() }
-        }
-        return cycle
-      }),
-    )
+    dispatch(markCurrentCycleAsFinishedActions())
   }
 
   function setSecondesPassed(seconds: number) {
@@ -62,22 +57,13 @@ export function CycleContextProvider({ children }: CyclesContextProviderProps) {
     }
     setAmountSecondsPassed(0)
 
-    setCycles((prevState) => [...prevState, newCycle])
-    setActiveCycleId(newCycle.id)
+    dispatch(addNewCycleAction(newCycle))
   }
 
   function interruptedCurrentCycle() {
-    setCycles((prevState) =>
-      prevState.map((cycle) => {
-        if (cycle.id === activeCycleId) {
-          return { ...cycle, interruptedDate: new Date() }
-        }
-        return cycle
-      }),
-    )
-
-    setActiveCycleId(null)
+    dispatch(interrupedCurrentCycleActions())
   }
+
   return (
     <CycleContext.Provider
       value={{
