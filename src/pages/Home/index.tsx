@@ -1,7 +1,9 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
 import { zodResolver } from '@hookform/resolvers/zod';
+import { differenceInSeconds } from 'date-fns';
 import { Play } from 'phosphor-react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as zod from 'zod';
 
@@ -25,7 +27,18 @@ const newCycleFormValidationSchema = zod.z.object({
 
 type INewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>;
 
+interface ICycle {
+  id: string;
+  task: string;
+  minutesAmount: number;
+  startDate: Date;
+}
+
 export function Home() {
+  const [cycles, setCycles] = useState<ICycle[]>([]);
+  const [activeCycleId, setActiveCycleId] = useState<string | null>(null);
+  const [amountSecondsPassed, setAmountSecondsPassed] = useState(0);
+
   const { register, handleSubmit, watch, reset } = useForm<INewCycleFormData>({
     resolver: zodResolver(newCycleFormValidationSchema),
     defaultValues: {
@@ -34,10 +47,41 @@ export function Home() {
     },
   });
 
-  function handleCreateNewCycle(data: INewCycleFormData) {
-    console.log(data);
+  const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
+
+  useEffect(() => {
+    if (activeCycle) {
+      setInterval(() => {
+        setAmountSecondsPassed(
+          differenceInSeconds(new Date(), activeCycle.startDate),
+        );
+      }, 1000);
+    }
+  }, [activeCycle]);
+
+  function handleCreateNewCycle({ minutesAmount, task }: INewCycleFormData) {
+    const newCycle: ICycle = {
+      id: String(new Date().getTime()),
+      task,
+      minutesAmount,
+      startDate: new Date(),
+    };
+
+    setCycles((prevState) => [...prevState, newCycle]);
+
+    setActiveCycleId(newCycle.id);
+
     reset();
   }
+
+  const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
+  const currentSeconds = activeCycle ? totalSeconds - amountSecondsPassed : 0;
+
+  const minutesAmount = Math.floor(currentSeconds / 60);
+  const secondsAmount = currentSeconds % 60;
+
+  const minutes = String(minutesAmount).padStart(2, '0');
+  const seconds = String(secondsAmount).padStart(2, '0');
 
   const task = watch('task');
 
@@ -74,11 +118,11 @@ export function Home() {
         </FormContainer>
 
         <CountdownContainer>
-          <span>0</span>
-          <span>0</span>
+          <span>{minutes[0]}</span>
+          <span>{minutes[1]}</span>
           <Separator>:</Separator>
-          <span>0</span>
-          <span>0</span>
+          <span>{seconds[0]}</span>
+          <span>{seconds[1]}</span>
         </CountdownContainer>
 
         <StartCountdownButton disabled={!task} type="submit">
