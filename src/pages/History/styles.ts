@@ -67,7 +67,7 @@ const STATUS_COLOR = {
 } as const;
 
 interface IStatusProps {
-  statusColor: keyof typeof STATUS_COLOR;
+  statuscolor: keyof typeof STATUS_COLOR;
 }
 
 export const Status = styled.span<IStatusProps>`
@@ -80,6 +80,6 @@ export const Status = styled.span<IStatusProps>`
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 9999px;
-    background: ${(props) => props.theme[STATUS_COLOR[props.statusColor]]};
+    background: ${(props) => props.theme[STATUS_COLOR[props.statuscolor]]};
   }
 `;
